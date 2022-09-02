@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Quick Start - Leaflet</title>
+
+    <link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css" integrity="sha512-hoalWLoI8r4UszCkZ5kL8vayOGVae1oxXe/2A4AO6J9+580uKHDO3JdHb7NzwwzK5xr/Fs0W40kiNHxM9vyTtQ==" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js" integrity="sha512-BB3hKbKWOc9Ez/TAwyWxNXeoV9c1v6FIeYiBieIWkpLjauysF18NzgR1MBNBXf8/KABdlkX68nAhlwcDFLGPCQ==" crossorigin=""></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            position: relative;
+        }
+        
+        .leaflet-container {
+            height: 100%;
+            width: 100%;
+            max-width: 100%;
+            max-height: 100%;
+        }
+        
+        #current_tile {
+            width: 200px;
+            height: 200px;
+            position: absolute;
+            overflow: hidden;
+            top: 100px;
+            left: 100px;
+            z-index: 11122;
+            border: 6px solid;
+            border-color: gray;
+        }
+        
+        #info_box {
+            width: 1180px;
+            height: 1180px;
+            position: absolute;
+            /* overflow: hidden; */
+            padding: 10px;
+            top: 350px;
+            left: 100px;
+            z-index: 211122;
+            background-color: rgba(100, 100, 100, 0.5);
+            border: 6px solid;
+            color: white;
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+            border-color: gray;
+        }
+        
+        #letter {
+            font-size: 1vw;
+            position: absolute;
+        }
+    </style>
+
+
+</head>
+
+<body>
+
+
+    <!-- <img id="current_tile" src="placeholder.png"></img> -->
+    <!-- <div id="info_box"></div> -->
+    <div id="map" style="width: 100%; height: 100%;"></div>
+
+    <button id="target">click me</button>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        //https://oms.wff.ch/calc.htm
+        //https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#ECMAScript_(JavaScript/ActionScript,_etc.)
+        $(document).ready(function() {
+            var Esri_WorldTerrain;
+
+            var socket = io();
+            var zoom = 16.0; // map.getZoom();
+            var markerLocations = [];
+            var markerIndex = 0;
+
+            socket.on('news', function(msg) {
+                //   console.log(msg);
+                var marker = L.marker([msg.lat, msg.lon]);
+                // var testZoom = 17;
+                markerLocations.push(L.latLng([msg.lat, msg.lon]));
+
+
+                var lat = msg.lat; // 54.9783;
+                var lon = msg.lon; //-1.6178;
+
+
+                var tileX = latTotile(lat, zoom);
+                var tileY = lonTotile(lon, zoom);
+
+                if (markerIndex == 0) {
+                    map.flyTo(markerLocations[markerIndex]);
+                    markerIndex++;
+                }
+
+
+
+                var info = "<br>lat:" + msg.lat + ", x:" + tileX + ", lon:" + msg.lon + ", y:" + tileY + "<br>";
+
+                var right = parseFloat(msg.lon) + 1.0;
+                var bottom = parseFloat(msg.lat) + 1.0;
+
+                // https://a.tile.openstreetmap.org/16/32471/20737.png
+                // console.log("tilelon", tilelon);
+                // "https://services.arcgisonline.com/arcgis/rest/services/ESRI_Imagery_World_2D/MapServer/export?bbox=" + msg.lat + "," + msg.lon + "," + right + "," + bottom + "&bboxSR=4326&size=256,256&f=image";
+
+                // var html = "<b>" + msg.ssid + info + "</b><br><img id='marker_tile' src='https://a.tile.openstreetmap.org/" + testZoom + "/" + tileX + "/" + tileY + "'></img>";
+
+                var html = "<b>" + msg.ssid + info + "</b><br><img id='marker_tile' src='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/" + zoom + "/" + tileX + "/" + tileY + "'></img>";
+                //   console.log(html)
+
+                // + msg.lat + "," + right + "," + msg.lon + "," + bottom + 
+                // var html = "<b>" + msg.ssid + info + "</b><br><img id='marker_tile' src='https://services.arcgisonline.com/arcgis/rest/services/World_Street_Map/MapServer/export?bbox=-74.2,40.6,-73.7,41&bboxSR=4326&size=600,400&f=image'></img>";
+                //  console.log(html);
+                //                var html = "<b>" + msg.ssid + info + "</b><br><img id='marker_tile' src='http://localhost:9999/map_server/single_tile.php/" + zoom + "/" + lat + "/" + lon + "'></img>";
+
+                marker.bindPopup(html).openPopup();
+
+                //marker.bindPopup("<b>" + msg.ssid + "</b><br><img id='marker_tile' src='http://localhost:9999/map_server/single_tile.php/17/" + msg.lat + "/" + msg.lon + "'></img>").openPopup();
+                // marker.addTo(map);
+                $("#current_tile").attr("src", "http://localhost:9999/map_server/single_tile.php/" + zoom + "/" + msg.lat + "/" + msg.lon + "");
+                // document.getElementById("message").innerHTML = msg;
+            });
+            var map = L.map('map').setView([54.9783, -1.6178], zoom);
+
+
+            // var Esri_WorldImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            //     attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+            // }).addTo(map);
+
+            // var Esri_WorldTerrain = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}', {
+            //     attribution: 'Tiles &copy; Esri &mdash; Source: USGS, Esri, TANA, DeLorme, and NPS',
+            //     maxZoom: 9
+            // }).addTo(map);
+
+
+            map.on("zoomend", function(e) {
+                if (markerLocations.length > 0) {
+                    console.log("ZOOMEND", map.getZoom());
+                    console.log("markerLocations[markerIndex]", markerLocations[markerIndex]);
+                    markerIndex = parseInt(Math.random() * (markerLocations.length - 1));
+                    map.flyTo(markerLocations[markerIndex], 18, {
+                        animate: true,
+                        duration: 230.5
+                    });
+
+
+                }
+
+            });
+
+
+            Esri_WorldTerrain = L.tileLayer('http://localhost:9999/map_server/tiles.php/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri &mdash; Source: USGS, Esri, TANA, DeLorme, and NPS',
+                maxZoom: 23
+            }).addTo(map);
+
+            var bounds = [
+                [83.359511330355, -5.625],
+                [83.979259498862, -11.25]
+            ];
+
+            // var marker = L.marker([52.53739929, 13.43229961]).addTo(map);
+            // // var bounds = [
+            // //     [53.912257, 27.581640],
+            // //     [53.902257, 27.561640]
+            // // ];
+
+            // // var rect = L.rectangle(bounds, {
+            // //     color: 'red',
+            // //     weight: 1
+            // // }).addTo(map);
+
+
+            // // create an orange rectangle
+            // L.rectangle(bounds, {
+            //     color: "#ff7800",
+            //     weight: 1
+            // }).addTo(map);
+
+            // zoom the map to the rectangle bounds
+            //   map.fitBounds(bounds);
+
+            // setInterval(() => {
+
+            // }, interval);
+
+            // L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            //     maxZoom: 19,
+            //     attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+            // }).addTo(map);
+            // var tilelon = Esri_WorldTerrain.lonTotile(0.4, 10);
+            // var tilelat = Esri_WorldTerrain.latTotile(0.4, 10);
+            // console.log("Rtilelateady", tilelon);
+
+
+            $("#current_tile").attr("src", "http://localhost:9999/map_server/single_tile.php/" + zoom + "/54.97770230970436/-1.6129254998812992");
+            // var info = `
+            //     MAC ADDRESS: 40:4e:36:d3:23:4e<br>
+            //     SIGNAL STRENGTH: 20db<br>
+            //     SSID: BTWholeHome-C8m<br>
+            //     LOCATION: lat:51.666,-1.5677
+            // `;
+
+            var info = `
+                MAC ADDRESS: 40:4e:36:d3:23:4e
+            `;
+
+            info.split(":").forEach(element => {
+                var ran = Math.random() * 100;
+                // ran = ran.toString();
+                ran = parseInt(ran);
+                _left = ran.toString() + "px";
+                _top = "-" + ran.toString() + "px";
+                ran += "pt";
+                // console.log(ran);
+                var newEle = "<p class='letter' style='width:" + _left + ";height:" + _top + ";left:" + _left + ";top:" + _top + ";font-size: " +
+                    ran + "'>" + element + "</p>";
+                // console.log(newEle);
+                // $('#info_box').append(newEle);
+            });
+
+
+
+            function getRand(bound) {
+                var rand = Math.ceil(Math.random() * bound) * (Math.round(Math.random()) ? 1 : -1)
+                console.log(rand);
+                return rand;
+            }
+
+
+
+
+            function onMapClick(e) {
+
+                // var bound = 90;
+                // var lat = Math.ceil(Math.random() * bound) * (Math.round(Math.random()) ? 1 : -1);
+                // bound = 180;
+                // var lon = Math.ceil(Math.random() * bound) * (Math.round(Math.random()) ? 1 : -1);
+                // console.log(lat, lon);
+                // map.setView([lat, lon]);
+            }
+
+            map.on('click', onMapClick);
+            $("#target").click(function() {
+                var bound = 90;
+                var lat = Math.ceil(Math.random() * bound) * (Math.round(Math.random()) ? 1 : -1);
+                bound = 180;
+                var lon = Math.ceil(Math.random() * bound) * (Math.round(Math.random()) ? 1 : -1);
+                console.log(lat, lon);
+                map.setView([lat, lon]);
+                // map.flyTo([lat, lon]).
+            });
+        });
+
+        function toRad(num) {
+            return num * Math.PI / 180;
+        }
+
+        function getTileURL(lat, lon, zoom) {
+            var xtile = parseInt(Math.floor((lon + 180) / 360 * (1 << zoom)));
+            var ytile = parseInt(Math.floor((1 - Math.log(Math.tan(toRad(lat)) + 1 / Math.cos(toRad(lat))) / Math.PI) / 2 * (1 << zoom)));
+            return "" + zoom + "/" + xtile + "/" + ytile;
+        }
+
+        // function lonTotile(lon, zoom) {
+        //     return (Math.floor((lon + 180) / 360 * Math.pow(2, zoom)));
+        // }
+        function lonTotile(lon, zoom1) {
+            tt = Number(lon);
+            return (Math.floor((tt + 180) / 360 * Math.pow(2, zoom1)));
+        }
+
+        function latTotile(lat, zoom) {
+            return (Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom)));
+        }
+
+        function tile2long(x, z) {
+            return (x / Math.pow(2, z) * 360 - 180);
+        }
+
+        function tile2lat(y, z) {
+            var n = Math.PI - 2 * Math.PI * y / Math.pow(2, z);
+            return (180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n))));
+        }
+    </script>
+
+
+
+</body>
+
+</html>

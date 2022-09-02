@@ -1,0 +1,20 @@
+AID772a767e3464fc28918b9707b7b536f0
+
+baef1dff704384ded5cbd800c4b86096
+
+
+54.98949728794313, -1.602641684346777
+54.989033846313745, -1.6011474316881822
+
+
+https://api.wigle.net/api/v2/network/search?onlymine=false&latrange1=54.98949728794313&latrange2=54.989033846313745&longrange1=-1.602641684346777&longrange2=-1.6011474316881822&freenet=false&paynet=false&ssid=SKYEAD60
+
+
+
+curl -X GET "https://api.wigle.net/api/v2/network/search?onlymine=false&latrange1=54.98949728794313&latrange2=54.989033846313745&longrange1=-1.602641684346777&longrange2=-1.6011474316881822&freenet=false&paynet=false&ssid=SKYEAD60" -H "accept: application/json" -H "authorization: Basic QUlENzcyYTc2N2UzNDY0ZmMyODkxOGI5NzA3YjdiNTM2ZjA6YmFlZjFkZmY3MDQzODRkZWQ1Y2JkODAwYzRiODYwOTY="
+
+
+
+idf.py -p /dev/cu.usbserial-0001 flash
+
+idf.py -p /dev/cu.usbserial-0001 monitor
